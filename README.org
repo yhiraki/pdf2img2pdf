@@ -1,0 +1,37 @@
+* pdf → image → pdf
+** 使い方
+   #+begin_src sh
+docker build . -t pdf2img2pdf
+docker run --rm -v $(pwd):/work -w /work pdf2img2pdf bash
+python3 p.py src.pdf dst.pdf
+   #+end_src
+** 背景
+   GCP の Cloud Vision API では PDF の OCR ができる。
+
+   https://cloud.google.com/vision/docs/pdf
+
+   主に画像で構成されている PDF の認識精度は良いが、通常のテキストが含まれる場合、その部分をちゃんと検出してくれないことがある。正確には文字は認識するが単語境界がおかしい。
+   おそらく、有償フォントが使用された PDF に対して適切な代替フォントにフォールバックされないので、 Vision API 内部でおかしな文字幅でレンダリングされてしまっていると推測した。
+
+   Vision API 内部の PDF レンダラには頼れないことがわかったので自分で代替案を作成した。
+** 技術
+   poppler ( https://poppler.freedesktop.org/ ) という、 xpdf 内部で使われいてるレンダリングライブラリを使うと良い。
+   今回は有志が python でラッパーを書いてくれているのでそれをお借りする。
+** フォントの設定
+   適切なフォントにフォールバックしてレンダリングするというのが今回の本題。
+
+   poppler の [[https://freedesktop.org/wiki/Software/poppler/][wiki]] にも書いてあるとおり、適切なフォントを設定するために =fontoconfig= を使用する。
+   例えば、 =Ryumin*= にマッチするフォントの代わりに =IPAPMincho= を使用する場合は以下のようにする。
+
+   #+begin_src xml
+<match target="pattern">
+  <test qual="any" name="family">
+    <string>Ryumin</string>
+  </test>
+  <edit name="family" mode="prepend" binding="same">
+    <string>IPAPMincho</string>
+  </edit>
+</match>
+   #+end_src
+
+   この設定を =~/.fonts.conf= として設置する。
