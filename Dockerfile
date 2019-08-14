@@ -18,8 +18,6 @@ RUN mkdir ~/.fonts && cd ~/.fonts \
   && fc-cache -fv \
   && rm -f IPAfont00303.php
 
-COPY ./.fonts.conf ~/
-
 COPY ./requirements.txt .
 
 RUN pip3 install -r requirements.txt
